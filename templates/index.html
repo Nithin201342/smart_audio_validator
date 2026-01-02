@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Audio Validator</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/wavesurfer.js@7"></script>
+  <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.min.js"></script>
+
+  <style>
+    .fade-in {
+      animation: fadeIn 0.8s ease-in-out forwards;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-white-100 min-h-screen relative overflow-hidden">
+
+  <!-- Particle Canvas -->
+  <canvas id="particleCanvas" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+
+  <!-- NAVBAR -->
+  <nav class="bg-white shadow-sm relative z-10 fade-in">
+    <div class="max-w-7xl mx-auto px-6 py-3 flex items-center">
+
+      <!-- Logo / Project Name -->
+      <h1 class="text-lg font-semibold text-gray-800">
+        Audex - Smart Audio Validator
+      </h1>
+
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="relative z-10 max-w-7xl mx-auto mt-16 px-6">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+      <!-- LEFT: UPLOAD CARD -->
+      <div class="bg-white p-8 rounded-xl shadow-lg fade-in h-[260px] self-start">
+        <h2 class="text-xl font-bold mb-4">
+          Upload Audio File
+        </h2>
+
+        <p class="text-gray-600 mb-6 text-sm">
+          Upload a WAV file to evaluate song quality
+        </p>
+
+        <form id="audioForm" enctype="multipart/form-data">
+          <input type="file" name="audio" accept=".wav" class="block w-full text-sm text-gray-500
+                 file:mr-4 file:py-2 file:px-4
+                 file:rounded-md file:border-0
+                 file:bg-blue-600 file:text-white
+                 hover:file:bg-blue-700" required>
+
+          <button type="submit" id="analyzeBtn" class="mt-6 w-full bg-blue-600 text-white py-2 rounded-lg">
+            Analyze Audio
+          </button>
+        </form>
+      </div>
+
+      <!-- RIGHT: RESULT CARD (EMPTY STATE) -->
+      <div id="resultCard" class="bg-white p-8 rounded-xl shadow-lg fade-in">
+        <h2 class="text-xl font-bold mb-4">
+          Analysis Result
+        </h2>
+
+        <div id="resultEmpty" class="text-gray-500 text-sm">
+          Upload an audio file to view quality score and recommendations.
+        </div>
+        <!-- Loading Animation -->
+        <div id="loadingState" class="hidden flex items-center justify-center mt-6">
+          <div class="flex items-center gap-3">
+            <div class="w-5 h-5 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-sm text-gray-600">Analyzing audio...</span>
+          </div>
+        </div>
+
+
+        <div id="resultContent" class="hidden">
+          <!-- Audio Waveform -->
+          <div class="mt-4">
+            <h3 class="text-sm font-semibold mb-2">Audio Waveform</h3>
+            <div id="waveform" class="bg-gray-100 rounded-lg p-2"></div>
+          </div>
+
+          <!-- USER-FRIENDLY SUMMARY -->
+          <div class="mb-4 mt-4">
+            <p class="text-lg font-semibold">
+              Overall Audio Quality:
+              <span id="qualityText" class="font-bold"></span>
+            </p>
+
+            <p id="qualityDesc" class="text-gray-600 text-sm mt-1"></p>
+
+            <!-- Star Rating -->
+            <div id="starRating" class="flex mt-2 text-yellow-400 text-lg"></div>
+          </div>
+
+          <!-- TECHNICAL DETAILS -->
+          <div class="mt-4 text-sm text-gray-600 border-t pt-3">
+            <p><b>Technical Score (MOS):</b> <span id="mosVal"></span> / 5</p>
+            <p><b>Model Confidence:</b> <span id="confidenceVal"></span>%</p>
+          </div>
+
+
+          <h3 class="mt-4 font-semibold">Recommendations</h3>
+          <ul id="recList" class="list-disc ml-6 text-gray-700 text-sm"></ul>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+
+
+  <!-- Particle animation script -->
+  <script>
+    const canvas = document.getElementById("particleCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let particles = [];
+    const COUNT = 280;
+    const INFLUENCE_RADIUS = 160;
+
+    let mouse = { x: null, y: null };
+
+    const symbols = ["♪", "♫", "♩", "♬"];
+    const BASE_RGB = "59,130,246";   // Tailwind blue-500
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    window.addEventListener("mousemove", e => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
+
+    window.addEventListener("mouseleave", () => {
+      mouse.x = null;
+      mouse.y = null;
+    });
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+
+        this.vx = Math.random() * 0.55 - 0.225; // increased speed
+        this.vy = Math.random() * 0.55 - 0.225; // increased speed
+
+        this.size = Math.random() * 14 + 10;
+        this.symbol = symbols[Math.floor(Math.random() * symbols.length)];
+
+        this.angle = Math.random() * Math.PI * 2;
+        this.spin = Math.random() * 0.01 - 0.005;
+
+        this.opacity = 0.6;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.angle += this.spin;
+        this.targetOpacity = 1;     // or 0.02 / 0.15
+        this.opacity += (this.targetOpacity - this.opacity) * 0.08;
+
+
+        if (mouse.x !== null) {
+          const dx = this.x - mouse.x;
+          const dy = this.y - mouse.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < INFLUENCE_RADIUS) {
+            const force = (INFLUENCE_RADIUS - dist) / INFLUENCE_RADIUS;
+            this.x += (dx / dist) * force * 6;
+            this.y += (dy / dist) * force * 6;
+            this.opacity = 1;
+          } else {
+            this.opacity = 0.02;   // 🔥 fade out strongly
+          }
+        } else {
+          this.opacity = 0.15;     // 🔥 default faint state
+        }
+
+
+        // Wrap around edges
+        if (this.x < -50) this.x = canvas.width + 50;
+        if (this.x > canvas.width + 50) this.x = -50;
+        if (this.y < -50) this.y = canvas.height + 50;
+        if (this.y > canvas.height + 50) this.y = -50;
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+        ctx.font = `${this.size}px Arial`;
+        ctx.fillStyle = `rgba(${BASE_RGB}, ${this.opacity})`;
+        ctx.fillText(this.symbol, -this.size / 2, this.size / 2);
+        ctx.restore();
+      }
+    }
+
+
+    function init() {
+      particles = [];
+      for (let i = 0; i < COUNT; i++) {
+        particles.push(new Particle());
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      requestAnimationFrame(animate);
+    }
+
+    init();
+    animate();
+
+    wavesurfer.on("ready", () => {
+      wavesurfer.clearRegions();
+
+      if (data.error_segments) {
+        data.error_segments.forEach(seg => {
+          wavesurfer.addRegion({
+            start: seg.start,
+            end: seg.end,
+            color: "rgba(239, 68, 68, 0.4)", // 🔴 red highlight
+            drag: false,
+            resize: false
+          });
+        });
+      }
+    });
+
+    function getRegionColor(type) {
+      switch (type) {
+        case "clipping": return "rgba(220, 38, 38, 0.5)";
+        case "noise": return "rgba(245, 158, 11, 0.5)";
+        case "low_energy": return "rgba(59, 130, 246, 0.4)";
+        default: return "rgba(107, 114, 128, 0.3)";
+      }
+    }
+    color: getRegionColor(seg.type)
+
+
+  </script>
+
+  <!-- waveform.js initialization -->
+  <script>
+    let wavesurfer = WaveSurfer.create({
+      container: "#waveform",
+      waveColor: "#93c5fd",
+      progressColor: "#2563eb",
+      height: 80,
+      responsive: true,
+      plugins: [
+        WaveSurfer.Regions.create()
+      ]
+    });
+  </script>
+
+  <!-- AJAX form submission script -->
+  <script>
+    function updateUserFriendlyResult(mos, quality) {
+      const qualityText = document.getElementById("qualityText");
+      const qualityDesc = document.getElementById("qualityDesc");
+      const starRating = document.getElementById("starRating");
+
+      let stars = 0;
+      let desc = "";
+
+      if (mos >= 4.2) {
+        stars = 5;
+        desc = "Excellent audio quality. Sounds professional and well balanced.";
+      } else if (mos >= 3.5) {
+        stars = 4;
+        desc = "Good quality. Minor improvements can make it sound better.";
+      } else if (mos >= 2.8) {
+        stars = 3;
+        desc = "Average quality. Noticeable issues that can be improved.";
+      } else if (mos >= 2.0) {
+        stars = 2;
+        desc = "Poor quality. Multiple issues detected in the audio.";
+      } else {
+        stars = 1;
+        desc = "Very poor quality. Re-recording is strongly recommended.";
+      }
+
+      qualityText.innerText = `${stars} / 5`;
+      qualityDesc.innerText = desc;
+
+      // Render stars
+      starRating.innerHTML = "";
+      for (let i = 0; i < 5; i++) {
+        starRating.innerHTML += i < stars ? "★" : "☆";
+      }
+    }
+
+    const form = document.getElementById("audioForm");
+    const loadingState = document.getElementById("loadingState");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const fileInput = form.querySelector("input[type=file]");
+      if (!fileInput.files.length) return;
+
+      // 🔄 Show loader
+      loadingState.classList.remove("hidden");
+      document.getElementById("resultContent").classList.add("hidden");
+      document.getElementById("resultEmpty").classList.add("hidden");
+      analyzeBtn.disabled = true;
+      analyzeBtn.innerText = "Analyzing...";
+
+      const formData = new FormData();
+      formData.append("audio", fileInput.files[0]);
+
+      wavesurfer.loadBlob(fileInput.files[0]);
+
+      const res = await fetch("/analyze_ajax", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+
+      // 🔄 Hide loader
+      loadingState.classList.add("hidden");
+      analyzeBtn.disabled = false;
+      analyzeBtn.innerText = "Analyze Audio";
+
+      // Populate result
+      document.getElementById("resultContent").classList.remove("hidden");
+
+      document.getElementById("mosVal").innerText = data.mos;
+      document.getElementById("confidenceVal").innerText = data.confidence;
+      updateUserFriendlyResult(data.mos);
+
+      const list = document.getElementById("recList");
+      list.innerHTML = "";
+
+      data.recommendations.forEach(r => {
+        const li = document.createElement("li");
+        li.className = "mb-3";
+
+        li.innerHTML = `
+    <div class="p-3 bg-gray-50 rounded-lg border">
+      <p class="font-semibold text-gray-800">⚠️ ${r.issue}</p>
+      <p class="text-sm text-gray-600">${r.message}</p>
+      <p class="text-sm mt-1">
+        <b>Fix:</b> ${r.fix}
+      </p>
+      <a href="${r.youtube}" target="_blank"
+         class="inline-block mt-2 text-blue-600 text-sm hover:underline">
+        ▶ Watch how to fix this
+      </a>
+    </div>
+  `;
+
+        list.appendChild(li);
+      });
+
+
+      // 🎨 Update particles based on model output
+      updateParticleTheme(data.quality, data.loudness, data.pitch_std);
+    });
+
+  </script>
+
+</body>
+
+</html>
