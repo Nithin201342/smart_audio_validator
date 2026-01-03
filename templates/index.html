@@ -25,10 +25,35 @@
         transform: translateY(0);
       }
     }
+
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }
+
+    .star {
+      animation: pop 0.4s ease forwards;
+    }
+
+    @keyframes pop {
+      0% {
+        transform: scale(0.5);
+        opacity: 0;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
   </style>
 </head>
 
-<body class="bg-white-100 min-h-screen relative overflow-hidden">
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
 
   <!-- Particle Canvas -->
   <canvas id="particleCanvas" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
@@ -51,12 +76,12 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
       <!-- LEFT: UPLOAD CARD -->
-      <div class="bg-white p-8 rounded-xl shadow-lg fade-in h-[260px] self-start">
-        <h2 class="text-xl font-bold mb-4">
+      <div class="bg-white/80 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-white/60 h-[75vh]">
+        <h2 class="text-xl font-semibold text-slate-800 mb-1">
           Upload Audio File
         </h2>
 
-        <p class="text-gray-600 mb-6 text-sm">
+        <p class="text-xs text-slate-500 mb-4">
           Upload a WAV file to evaluate song quality
         </p>
 
@@ -67,59 +92,74 @@
                  file:bg-blue-600 file:text-white
                  hover:file:bg-blue-700" required>
 
-          <button type="submit" id="analyzeBtn" class="mt-6 w-full bg-blue-600 text-white py-2 rounded-lg">
+          <button type="submit" id="analyzeBtn" class="mt-6 w-full bg-gradient-to-r from-blue-600 to-indigo-600
+         text-white py-2 rounded-lg font-medium
+         hover:scale-[1.02] active:scale-95 transition-transform shadow-lg">
             Analyze Audio
           </button>
         </form>
       </div>
 
       <!-- RIGHT: RESULT CARD (EMPTY STATE) -->
-      <div id="resultCard" class="bg-white p-8 rounded-xl shadow-lg fade-in">
-        <h2 class="text-xl font-bold mb-4">
-          Analysis Result
-        </h2>
-
-        <div id="resultEmpty" class="text-gray-500 text-sm">
-          Upload an audio file to view quality score and recommendations.
-        </div>
-        <!-- Loading Animation -->
-        <div id="loadingState" class="hidden flex items-center justify-center mt-6">
-          <div class="flex items-center gap-3">
-            <div class="w-5 h-5 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-sm text-gray-600">Analyzing audio...</span>
-          </div>
+      <div id="resultCard"
+        class="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-white/30 h-[75vh] flex flex-col">
+        <div class="p-8 border-b border-white/30 sticky top-0 bg-white/70 backdrop-blur-md z-10">
+          <h2 class="text-xl font-semibold text-slate-800 mb-1">
+            Analysis Result
+          </h2>
+          <p class="text-xs text-slate-500 mb-4">
+            Audio quality evaluation & recommendations
+          </p>
         </div>
 
-
-        <div id="resultContent" class="hidden">
-          <!-- Audio Waveform -->
-          <div class="mt-4">
-            <h3 class="text-sm font-semibold mb-2">Audio Waveform</h3>
-            <div id="waveform" class="bg-gray-100 rounded-lg p-2"></div>
+        <div class="p-8 overflow-y-auto scrollbar-thin">
+          <div id="resultEmpty" class="text-gray-500 text-sm">
+            Upload an audio file to view quality score and recommendations.
           </div>
 
-          <!-- USER-FRIENDLY SUMMARY -->
-          <div class="mb-4 mt-4">
-            <p class="text-lg font-semibold">
-              Overall Audio Quality:
-              <span id="qualityText" class="font-bold"></span>
-            </p>
-
-            <p id="qualityDesc" class="text-gray-600 text-sm mt-1"></p>
-
-            <!-- Star Rating -->
-            <div id="starRating" class="flex mt-2 text-yellow-400 text-lg"></div>
-          </div>
-
-          <!-- TECHNICAL DETAILS -->
-          <div class="mt-4 text-sm text-gray-600 border-t pt-3">
-            <p><b>Technical Score (MOS):</b> <span id="mosVal"></span> / 5</p>
-            <p><b>Model Confidence:</b> <span id="confidenceVal"></span>%</p>
+          <!-- Loading Animation -->
+          <div id="loadingState" class="hidden flex items-center justify-center mt-6">
+            <div class="flex items-center gap-3">
+              <div class="w-5 h-5 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <span class="text-sm text-gray-600">Analyzing audio...</span>
+            </div>
           </div>
 
 
-          <h3 class="mt-4 font-semibold">Recommendations</h3>
-          <ul id="recList" class="list-disc ml-6 text-gray-700 text-sm"></ul>
+          <div id="resultContent" class="hidden">
+
+            <!-- Audio Waveform -->
+            <div class="mt-6 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
+              <h3 class="text-sm font-semibold mb-2">Audio Waveform</h3>
+              <div class="bg-white rounded-xl p-3 shadow-inner border">
+                <div id="waveform"></div>
+              </div>
+
+            </div>
+
+            <!-- USER-FRIENDLY SUMMARY -->
+            <div class="mb-4 mt-4">
+              <p class="text-lg font-semibold">
+                Overall Audio Quality:
+                <span id="qualityText" class="font-bold"></span>
+              </p>
+
+              <p id="qualityDesc" class="text-gray-600 text-sm mt-1"></p>
+
+              <!-- Star Rating -->
+              <div id="starRating" class="flex mt-2 text-yellow-400 text-lg"></div>
+            </div>
+
+            <!-- TECHNICAL DETAILS -->
+            <div class="mt-4 text-sm text-gray-600 border-t pt-3">
+              <p><b>Technical Score (MOS):</b> <span id="mosVal"></span> / 5</p>
+              <p><b>Model Confidence:</b> <span id="confidenceVal"></span>%</p>
+            </div>
+
+
+            <h3 class="mt-4 font-semibold">Recommendations</h3>
+            <ul id="recList" class="list-disc ml-6 text-gray-700 text-sm"></ul>
+          </div>
         </div>
       </div>
 
@@ -127,11 +167,25 @@
     </div>
   </div>
 
+  <!-- waveform.js initialization -->
+  <script>
+    let wavesurfer = WaveSurfer.create({
+      container: "#waveform",
+      waveColor: "#93c5fd",
+      progressColor: "#2563eb",
+      height: 80,
+      responsive: true,
+      plugins: [
+        WaveSurfer.Regions.create()
+      ]
+    });
+  </script>
 
   <!-- Particle animation script -->
   <script>
     const canvas = document.getElementById("particleCanvas");
     const ctx = canvas.getContext("2d");
+    let analysisData = null;
 
     let particles = [];
     const COUNT = 280;
@@ -243,8 +297,8 @@
     wavesurfer.on("ready", () => {
       wavesurfer.clearRegions();
 
-      if (data.error_segments) {
-        data.error_segments.forEach(seg => {
+      if (analysisData.error_segments) {
+        analysisData.error_segments.forEach(seg => {
           wavesurfer.addRegion({
             start: seg.start,
             end: seg.end,
@@ -264,23 +318,8 @@
         default: return "rgba(107, 114, 128, 0.3)";
       }
     }
-    color: getRegionColor(seg.type)
 
 
-  </script>
-
-  <!-- waveform.js initialization -->
-  <script>
-    let wavesurfer = WaveSurfer.create({
-      container: "#waveform",
-      waveColor: "#93c5fd",
-      progressColor: "#2563eb",
-      height: 80,
-      responsive: true,
-      plugins: [
-        WaveSurfer.Regions.create()
-      ]
-    });
   </script>
 
   <!-- AJAX form submission script -->
@@ -369,17 +408,20 @@
         li.className = "mb-3";
 
         li.innerHTML = `
-    <div class="p-3 bg-gray-50 rounded-lg border">
-      <p class="font-semibold text-gray-800">⚠️ ${r.issue}</p>
-      <p class="text-sm text-gray-600">${r.message}</p>
-      <p class="text-sm mt-1">
-        <b>Fix:</b> ${r.fix}
-      </p>
+    <div class="mb-4 p-4 bg-white rounded-xl border shadow-sm hover:shadow-md transition">
+  <div class="flex items-start gap-3">
+    <div class="text-xl">⚠️</div>
+    <div>
+      <p class="font-semibold text-slate-800">${r.issue}</p>
+      <p class="text-sm text-slate-600">${r.message}</p>
+      <p class="text-sm mt-1"><b>Fix:</b> ${r.fix}</p>
       <a href="${r.youtube}" target="_blank"
          class="inline-block mt-2 text-blue-600 text-sm hover:underline">
-        ▶ Watch how to fix this
+        ▶ Watch tutorial
       </a>
     </div>
+  </div>
+</div>
   `;
 
         list.appendChild(li);
