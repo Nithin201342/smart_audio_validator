@@ -33,7 +33,7 @@ def analyze():
     # Get uploaded file
     file = request.files.get("audio")
 
-    if not file or not file.filename.endswith(".wav"):
+    if not file:
         return "❌ Please upload a valid WAV file."
 
     # Save file with unique name
@@ -62,36 +62,37 @@ def analyze():
 
 @app.route("/analyze_ajax", methods=["POST"])
 def analyze_ajax():
-    file = request.files.get("audio")
+    try:
+        file = request.files.get("audio")
+        print("Received file:", file.filename if file else None)
 
-    if not file or not file.filename.endswith(".wav"):
-        return jsonify({"error": "Invalid file"}), 400
+        if not file:
+            return jsonify({"error": "No audio file"}), 400
 
-    filename = f"{uuid.uuid4()}.wav"
-    audio_path = os.path.join(UPLOAD_FOLDER, filename)
-    file.save(audio_path)
+        filename = f"{uuid.uuid4()}.wav"
+        audio_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(audio_path)
 
-    mos = predict_mos(audio_path)
-    quality, confidence = map_quality(mos)
-    features = extract_features(audio_path)
-    recs = generate_recommendations(features)
-    error_segments = detect_error_segments(audio_path)
+        mos = predict_mos(audio_path)
+        quality, confidence = map_quality(mos)
+        features = extract_features(audio_path)
+        recs = generate_recommendations(features)
+        error_segments = detect_error_segments(audio_path)
 
+        return jsonify({
+            "mos": round(mos, 2),
+            "quality": quality,
+            "confidence": confidence,
+            "recommendations": recs,
+            "loudness": float(features[4]),
+            "pitch_std": float(features[1]),
+            "error_segments": error_segments
+        })
 
-    # Example audio stats (used for visuals)
-    loudness = float(features[4])      # RMS mean
-    pitch_std = float(features[1])     # Pitch std
+    except Exception as e:
+        print("🔥 ERROR:", str(e))
+        return jsonify({"error": str(e)}), 500
 
-
-    return jsonify({
-        "mos": round(mos, 2),
-        "quality": quality,
-        "confidence": confidence,
-        "recommendations": recs,
-        "loudness": loudness,
-        "pitch_std": pitch_std,
-        "error_segments": error_segments
-    })
 
 # -------------------------
 # Run App

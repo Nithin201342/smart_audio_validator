@@ -97,6 +97,52 @@
          hover:scale-[1.02] active:scale-95 transition-transform shadow-lg">
             Analyze Audio
           </button>
+
+          <!-- 🎤 Live Recording Section -->
+          <div class="mt-6 border-t pt-4">
+            <p class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              🎤 Live Recording
+              <span class="text-xs text-slate-400">(Sing or play music)</span>
+            </p>
+
+            <div class="flex items-center gap-4">
+
+              <!-- Record Button -->
+              <button id="recordBtn" class="w-12 h-12 rounded-full bg-red-500 text-white
+             flex items-center justify-center
+             shadow-lg hover:scale-110 active:scale-95
+             transition relative">
+
+                <!-- Mic Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 1v10m0 0a3 3 0 003-3V5a3 3 0 00-6 0v3a3 3 0 003 3zm0 0v6m-4 0h8" />
+                </svg>
+
+                <!-- Pulsing ring (hidden by default) -->
+                <span id="recordPulse"
+                  class="absolute inset-0 rounded-full border-4 border-red-400 animate-ping hidden">
+                </span>
+              </button>
+
+              <!-- Stop Button -->
+              <button id="stopBtn" disabled class="w-12 h-12 rounded-full bg-slate-300 text-white
+             flex items-center justify-center
+             shadow cursor-not-allowed transition">
+
+                <!-- Stop Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="6" width="12" height="12" rx="2" />
+                </svg>
+              </button>
+
+              <!-- Status -->
+              <span id="recordStatus" class="text-xs text-slate-500"></span>
+            </div>
+          </div>
+
+
         </form>
       </div>
 
@@ -433,6 +479,170 @@
     });
 
   </script>
+
+  <!-- WAV Conversion Script -->
+  <script>
+    async function convertToWav(blob) {
+      const audioCtx = new AudioContext();
+      const arrayBuffer = await blob.arrayBuffer();
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+      const numChannels = audioBuffer.numberOfChannels;
+      const sampleRate = audioBuffer.sampleRate;
+      const length = audioBuffer.length * numChannels * 2;
+
+      const buffer = new ArrayBuffer(44 + length);
+      const view = new DataView(buffer);
+
+      let offset = 0;
+
+      function writeString(str) {
+        for (let i = 0; i < str.length; i++) {
+          view.setUint8(offset++, str.charCodeAt(i));
+        }
+      }
+
+      writeString("RIFF");
+      view.setUint32(offset, 36 + length, true); offset += 4;
+      writeString("WAVE");
+      writeString("fmt ");
+      view.setUint32(offset, 16, true); offset += 4;
+      view.setUint16(offset, 1, true); offset += 2;
+      view.setUint16(offset, numChannels, true); offset += 2;
+      view.setUint32(offset, sampleRate, true); offset += 4;
+      view.setUint32(offset, sampleRate * numChannels * 2, true); offset += 4;
+      view.setUint16(offset, numChannels * 2, true); offset += 2;
+      view.setUint16(offset, 16, true); offset += 2;
+      writeString("data");
+      view.setUint32(offset, length, true); offset += 4;
+
+      const channels = [];
+      for (let i = 0; i < numChannels; i++) {
+        channels.push(audioBuffer.getChannelData(i));
+      }
+
+      for (let i = 0; i < audioBuffer.length; i++) {
+        for (let c = 0; c < numChannels; c++) {
+          const sample = Math.max(-1, Math.min(1, channels[c][i]));
+          view.setInt16(offset, sample * 32767, true);
+          offset += 2;
+        }
+      }
+
+      return buffer;
+    }
+  </script>
+
+  <!-- Audio Recording Script -->
+  <script>
+    let audioContext, mediaRecorder, audioStream;
+    let audioChunks = [];
+
+    const recordBtn = document.getElementById("recordBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const recordStatus = document.getElementById("recordStatus");
+
+    recordBtn.onclick = async () => {
+      audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      mediaRecorder = new MediaRecorder(audioStream);
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
+      mediaRecorder.onstop = async () => {
+        try {
+          recordStatus.innerText = "Analyzing recording…";
+          loadingState.classList.remove("hidden");
+          document.getElementById("resultContent").classList.add("hidden");
+          document.getElementById("resultEmpty").classList.add("hidden");
+
+          const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+
+          const rawWav = await convertToWav(audioBlob);
+          const wavBlob = new Blob([rawWav], { type: "audio/wav" });
+
+          // Load waveform
+          wavesurfer.loadBlob(wavBlob);
+
+          const fd = new FormData();
+          fd.append("audio", wavBlob, "recorded.wav");
+
+          console.log("Sending recorded WAV to backend...");
+
+          const res = await fetch("/analyze_ajax", {
+            method: "POST",
+            body: fd
+          });
+
+          if (!res.ok) throw new Error("Backend error");
+
+          const data = await res.json();
+          analysisData = data;
+
+          loadingState.classList.add("hidden");
+          document.getElementById("resultContent").classList.remove("hidden");
+
+          document.getElementById("mosVal").innerText = data.mos;
+          document.getElementById("confidenceVal").innerText = data.confidence;
+          updateUserFriendlyResult(data.mos);
+
+          const list = document.getElementById("recList");
+          list.innerHTML = "";
+
+          data.recommendations.forEach(r => {
+            list.innerHTML += `
+        <div class="mb-4 p-4 bg-white rounded-xl border shadow-sm">
+          <p class="font-semibold">⚠️ ${r.issue}</p>
+          <p class="text-sm">${r.message}</p>
+          <p class="text-sm"><b>Fix:</b> ${r.fix}</p>
+          <a href="${r.youtube}" target="_blank"
+             class="text-blue-600 text-sm hover:underline">
+            ▶ Watch tutorial
+          </a>
+        </div>
+      `;
+          });
+
+          recordStatus.innerText = "Recording analyzed ✔";
+
+        } catch (err) {
+          console.error(err);
+          recordStatus.innerText = "Recording analysis failed ❌";
+          loadingState.classList.add("hidden");
+        }
+      };
+
+
+      mediaRecorder.start();
+
+      recordStatus.innerText = "Recording…";
+      recordBtn.disabled = true;
+      stopBtn.disabled = false;
+
+      recordBtn.classList.add("opacity-70");
+      stopBtn.classList.remove("bg-slate-300", "cursor-not-allowed");
+      stopBtn.classList.add("bg-slate-700");
+
+      document.getElementById("recordPulse").classList.remove("hidden");
+    };
+
+    stopBtn.onclick = () => {
+      mediaRecorder.stop();
+      audioStream.getTracks().forEach(t => t.stop());
+
+      recordBtn.disabled = false;
+      stopBtn.disabled = true;
+
+      recordBtn.classList.remove("opacity-70");
+      stopBtn.classList.add("bg-slate-300", "cursor-not-allowed");
+      stopBtn.classList.remove("bg-slate-700");
+
+      recordStatus.innerText = "Recording stopped";
+    };
+
+  </script>
+
 
 </body>
 
