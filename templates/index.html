@@ -53,18 +53,18 @@
   </style>
 </head>
 
-<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
+<body class="bg-gradient-to-br from-slate-100 via-slate-50 to-indigo-100 min-h-screen text-slate-800">
 
   <!-- Particle Canvas -->
   <canvas id="particleCanvas" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
 
   <!-- NAVBAR -->
-  <nav class="bg-white shadow-sm relative z-10 fade-in">
+  <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-20">
     <div class="max-w-7xl mx-auto px-6 py-3 flex items-center">
 
       <!-- Logo / Project Name -->
-      <h1 class="text-lg font-semibold text-gray-800">
-        Audex - Smart Audio Validator
+      <h1 class="text-lg font-semibold tracking-tight text-slate-900">
+        Audex <span class="text-indigo-600">Audio Validator</span>
       </h1>
 
     </div>
@@ -76,7 +76,8 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
       <!-- LEFT: UPLOAD CARD -->
-      <div class="bg-white/80 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-white/60 h-[75vh]">
+      <div
+        class="bg-white/70 backdrop-blur-xl p-8 rounded-2xl shadow-lg border border-slate-200 h-[50vh] flex flex-col">
         <h2 class="text-xl font-semibold text-slate-800 mb-1">
           Upload Audio File
         </h2>
@@ -84,72 +85,73 @@
         <p class="text-xs text-slate-500 mb-4">
           Upload a WAV file to evaluate song quality
         </p>
+        <div class="space-y-6">
+          <form id="audioForm" enctype="multipart/form-data">
+            <input type="file" name="audio" accept=".wav" class="block w-full text-sm text-slate-600
+            file:mr-4 file:py-2 file:px-4
+            file:rounded-lg file:border
+            file:border-slate-300
+            file:bg-slate-100 file:text-slate-700
+            hover:file:bg-slate-200 mb-4 transition" required>
 
-        <form id="audioForm" enctype="multipart/form-data">
-          <input type="file" name="audio" accept=".wav" class="block w-full text-sm text-gray-500
-                 file:mr-4 file:py-2 file:px-4
-                 file:rounded-md file:border-0
-                 file:bg-blue-600 file:text-white
-                 hover:file:bg-blue-700" required>
+            <button type="submit" id="analyzeBtn" class="w-full bg-indigo-600 hover:bg-indigo-700
+            text-white py-2.5 rounded-lg font-medium
+            transition shadow-md">
+              Analyze Audio
+            </button>
 
-          <button type="submit" id="analyzeBtn" class="mt-6 w-full bg-gradient-to-r from-blue-600 to-indigo-600
-         text-white py-2 rounded-lg font-medium
-         hover:scale-[1.02] active:scale-95 transition-transform shadow-lg">
-            Analyze Audio
-          </button>
+            <!-- 🎤 Live Recording Section -->
+            <div class="mt-6 pt-5 border-t border-slate-200">
+              <p class="text-sm font-medium text-slate-700 mb-4">
+                Live Recording
+                <span class="text-xs text-slate-400">(Sing or play music)</span>
+              </p>
 
-          <!-- 🎤 Live Recording Section -->
-          <div class="mt-6 border-t pt-4">
-            <p class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-              🎤 Live Recording
-              <span class="text-xs text-slate-400">(Sing or play music)</span>
-            </p>
+              <div class="flex items-center gap-4">
 
-            <div class="flex items-center gap-4">
+                <!-- Record Button -->
+                <button id="recordBtn" class="w-12 h-12 rounded-full bg-rose-500 text-white
+                  flex items-center justify-center
+                  shadow-md hover:scale-105 transition relative">
 
-              <!-- Record Button -->
-              <button id="recordBtn" class="w-12 h-12 rounded-full bg-red-500 text-white
-             flex items-center justify-center
-             shadow-lg hover:scale-110 active:scale-95
-             transition relative">
+                  <!-- Mic Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 1v10m0 0a3 3 0 003-3V5a3 3 0 00-6 0v3a3 3 0 003 3zm0 0v6m-4 0h8" />
+                  </svg>
 
-                <!-- Mic Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
-                  stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 1v10m0 0a3 3 0 003-3V5a3 3 0 00-6 0v3a3 3 0 003 3zm0 0v6m-4 0h8" />
-                </svg>
+                  <!-- Pulsing ring (hidden by default) -->
+                  <span id="recordPulse"
+                    class="absolute inset-0 rounded-full border-4 border-red-400 animate-ping hidden">
+                  </span>
+                </button>
 
-                <!-- Pulsing ring (hidden by default) -->
-                <span id="recordPulse"
-                  class="absolute inset-0 rounded-full border-4 border-red-400 animate-ping hidden">
-                </span>
-              </button>
+                <!-- Stop Button -->
+                <button id="stopBtn" disabled class="w-12 h-12 rounded-full bg-slate-200 text-slate-600
+                  flex items-center justify-center
+                  shadow-sm cursor-not-allowed transition">
 
-              <!-- Stop Button -->
-              <button id="stopBtn" disabled class="w-12 h-12 rounded-full bg-slate-300 text-white
-             flex items-center justify-center
-             shadow cursor-not-allowed transition">
+                  <!-- Stop Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="6" width="12" height="12" rx="2" />
+                  </svg>
+                </button>
 
-                <!-- Stop Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="6" width="12" height="12" rx="2" />
-                </svg>
-              </button>
-
-              <!-- Status -->
-              <span id="recordStatus" class="text-xs text-slate-500"></span>
+                <!-- Status -->
+                <span id="recordStatus" class="text-xs text-slate-500"></span>
+              </div>
             </div>
-          </div>
 
 
-        </form>
+          </form>
+        </div>
       </div>
 
       <!-- RIGHT: RESULT CARD (EMPTY STATE) -->
       <div id="resultCard"
-        class="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-white/30 h-[75vh] flex flex-col">
-        <div class="p-8 border-b border-white/30 sticky top-0 bg-white/70 backdrop-blur-md z-10">
+        class="bg-white/70 backdrop-blur-xl rounded-2xl shadow-lg border border-slate-200 h-[75vh] flex flex-col">
+        <div class="p-6 border-b border-slate-200 bg-white/60 backdrop-blur-md sticky top-0 z-10">
           <h2 class="text-xl font-semibold text-slate-800 mb-1">
             Analysis Result
           </h2>
@@ -175,7 +177,7 @@
           <div id="resultContent" class="hidden">
 
             <!-- Audio Waveform -->
-            <div class="mt-6 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
+            <div class="mt-2 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
               <h3 class="text-sm font-semibold mb-2">Audio Waveform</h3>
               <div class="bg-white rounded-xl p-3 shadow-inner border">
                 <div id="waveform"></div>
@@ -199,10 +201,28 @@
             <!-- TECHNICAL DETAILS -->
             <div class="mt-4 text-sm text-gray-600 border-t pt-3">
               <p><b>Technical Score (MOS):</b> <span id="mosVal"></span> / 5</p>
-              <p><b>Model Confidence:</b> <span id="confidenceVal"></span>%</p>
+
+              <!-- Confidence Progress Bar -->
+              <div class="mt-4">
+                <div class="flex justify-between mb-1">
+                  <span class="text-sm font-medium text-slate-700">
+                    Confidence Level
+                  </span>
+                  <span id="confidenceVal" class="text-sm text-slate-500">
+                    0%
+                  </span>
+                </div>
+
+                <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                  <div id="confidenceBar" class="h-2.5 rounded-full transition-all duration-700 ease-out bg-indigo-500"
+                    style="width: 0%">
+                  </div>
+                </div>
+
+              </div>
             </div>
 
-
+            <!-- RECOMMENDATIONS LIST -->
             <h3 class="mt-4 font-semibold">Recommendations</h3>
             <ul id="recList" class="list-disc ml-6 text-gray-700 text-sm"></ul>
           </div>
@@ -213,14 +233,52 @@
     </div>
   </div>
 
+
+  <!-- Confidence Bar Update Script -->
+  <script>
+    function updateConfidenceBar(confidence) {
+      const bar = document.getElementById("confidenceBar");
+      const text = document.getElementById("confidenceVal"); // ✅ FIXED ID
+
+      if (!bar || !text) return;
+
+      const value = Math.max(0, Math.min(100, Number(confidence)));
+
+      // Update width + text
+      bar.style.width = value + "%";
+      text.innerText = value.toFixed(1) + "%";
+
+      // Remove previous color classes
+      bar.classList.remove(
+        "bg-green-500",
+        "bg-indigo-500",
+        "bg-yellow-500",
+        "bg-red-500"
+      );
+
+      // Add correct color
+      if (value >= 75) {
+        bar.classList.add("bg-green-500");
+      } else if (value >= 50) {
+        bar.classList.add("bg-indigo-500");
+      } else if (value >= 30) {
+        bar.classList.add("bg-yellow-500");
+      } else {
+        bar.classList.add("bg-red-500");
+      }
+    }
+  </script>
+
   <!-- waveform.js initialization -->
   <script>
     let wavesurfer = WaveSurfer.create({
       container: "#waveform",
-      waveColor: "#93c5fd",
-      progressColor: "#2563eb",
-      height: 80,
+      waveColor: "#94a3b8",        // slate-400
+      progressColor: "#475569",    // slate-600
+      height: 90,
       responsive: true,
+      barWidth: 2,
+      barGap: 2,
       plugins: [
         WaveSurfer.Regions.create()
       ]
@@ -364,8 +422,6 @@
         default: return "rgba(107, 114, 128, 0.3)";
       }
     }
-
-
   </script>
 
   <!-- AJAX form submission script -->
@@ -444,6 +500,7 @@
 
       document.getElementById("mosVal").innerText = data.mos;
       document.getElementById("confidenceVal").innerText = data.confidence;
+      updateConfidenceBar(data.confidence);
       updateUserFriendlyResult(data.mos);
 
       const list = document.getElementById("recList");
@@ -454,20 +511,20 @@
         li.className = "mb-3";
 
         li.innerHTML = `
-    <div class="mb-4 p-4 bg-white rounded-xl border shadow-sm hover:shadow-md transition">
-  <div class="flex items-start gap-3">
-    <div class="text-xl">⚠️</div>
-    <div>
-      <p class="font-semibold text-slate-800">${r.issue}</p>
-      <p class="text-sm text-slate-600">${r.message}</p>
-      <p class="text-sm mt-1"><b>Fix:</b> ${r.fix}</p>
-      <a href="${r.youtube}" target="_blank"
-         class="inline-block mt-2 text-blue-600 text-sm hover:underline">
-        ▶ Watch tutorial
-      </a>
-    </div>
-  </div>
-</div>
+        <div class="mb-4 p-4 bg-white rounded-xl border shadow-sm hover:shadow-md transition">
+          <div class="flex items-start gap-3">
+            <div class="text-xl">⚠️</div>
+            <div>
+              <p class="font-semibold text-slate-800">${r.issue}</p>
+              <p class="text-sm text-slate-600">${r.message}</p>
+              <p class="text-sm mt-1"><b>Fix:</b> ${r.fix}</p>
+              <a href="${r.youtube}" target="_blank"
+                class="inline-block mt-2 text-blue-600 text-sm hover:underline">
+                ▶ Watch tutorial
+              </a>
+            </div>
+          </div>
+        </div>
   `;
 
         list.appendChild(li);
@@ -585,6 +642,7 @@
 
           document.getElementById("mosVal").innerText = data.mos;
           document.getElementById("confidenceVal").innerText = data.confidence;
+          updateConfidenceBar(data.confidence);
           updateUserFriendlyResult(data.mos);
 
           const list = document.getElementById("recList");
