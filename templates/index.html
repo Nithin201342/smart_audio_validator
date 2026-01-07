@@ -218,8 +218,15 @@
                     style="width: 0%">
                   </div>
                 </div>
-
               </div>
+
+              <p class="mt-4">
+                <b>Genre:</b>
+                <span id="genreVal" class="inline-block ml-2 px-3 py-1 rounded-full
+               bg-indigo-100 text-indigo-700 text-xs font-semibold">
+                </span>
+              </p>
+
             </div>
 
             <!-- RECOMMENDATIONS LIST -->
@@ -401,7 +408,7 @@
     wavesurfer.on("ready", () => {
       wavesurfer.clearRegions();
 
-      if (analysisData.error_segments) {
+      if (analysisData && analysisData.error_segments) {
         analysisData.error_segments.forEach(seg => {
           wavesurfer.addRegion({
             start: seg.start,
@@ -488,7 +495,15 @@
         body: formData
       });
 
+      if (!res.ok) {
+        throw new Error("Server error");
+      }
       const data = await res.json();
+
+
+      document.getElementById("genreVal").innerText =
+        data.genre ? data.genre : "Unknown";
+
 
       // 🔄 Hide loader
       loadingState.classList.add("hidden");
@@ -634,8 +649,16 @@
 
           if (!res.ok) throw new Error("Backend error");
 
+          if (!res.ok) {
+            throw new Error("Server error");
+          }
           const data = await res.json();
+
           analysisData = data;
+
+          document.getElementById("genreVal").innerText =
+            data.genre ? data.genre : "Unknown";
+
 
           loadingState.classList.add("hidden");
           document.getElementById("resultContent").classList.remove("hidden");

@@ -8,6 +8,7 @@ from src.quality_mapper import map_quality
 from src.recommendations import generate_recommendations
 from flask import jsonify
 from src.error_segments import detect_error_segments
+from src.genre_predictor import predict_genre
 
 
 # -------------------------
@@ -78,6 +79,8 @@ def analyze_ajax():
         features = extract_features(audio_path)
         recs = generate_recommendations(features)
         error_segments = detect_error_segments(audio_path)
+        
+        genre = predict_genre(audio_path)
 
         return jsonify({
             "mos": round(mos, 2),
@@ -86,7 +89,8 @@ def analyze_ajax():
             "recommendations": recs,
             "loudness": float(features[4]),
             "pitch_std": float(features[1]),
-            "error_segments": error_segments
+            "error_segments": error_segments,
+            "genre": genre
         })
 
     except Exception as e:
