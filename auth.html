@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AI Smart Audio Validator</title>
+    <style>
+        /* Exact CSS variables from your design */
+        :root {
+            --bg-color: #f7f7f9;
+            --text-color: #111111;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --accent-color: #ff3366; 
+            --shadow-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+
+        /* Navbar (Matches your exact layout) */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 50px;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 1000;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .brand {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .brand span { color: var(--accent-color); font-size: 28px; }
+
+        /* Auth Container */
+        .auth-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 100px 20px 20px;
+            background: radial-gradient(circle at 50% -20%, #ffe0e8 0%, var(--bg-color) 60%);
+        }
+
+        .glass-card {
+            background: #ffffff;
+            border: 1px solid var(--glass-border);
+            padding: 40px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 15px 35px var(--shadow-color);
+            text-align: center;
+        }
+
+        .auth-title {
+            font-size: 28px;
+            font-weight: 800;
+            margin-top: 0;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .auth-subtitle {
+            color: #888;
+            font-size: 15px;
+            margin-bottom: 30px;
+        }
+
+        /* Form Inputs */
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .input-group label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #555;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            outline: none;
+            color: #333;
+            font-size: 15px;
+            box-sizing: border-box;
+            transition: border 0.3s, background 0.3s;
+        }
+        .input-group input:focus {
+            border-color: var(--accent-color);
+            background: #fffcfd;
+            box-shadow: 0 0 0 4px rgba(255, 51, 102, 0.1);
+        }
+
+        /* Submit Button */
+        button.submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+            box-shadow: 0 8px 20px rgba(255, 51, 102, 0.3);
+            margin-top: 10px;
+        }
+        button.submit-btn:hover {
+            background: #e62e5c;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 51, 102, 0.4);
+        }
+
+        /* Toggle Links */
+        .toggle-link {
+            margin-top: 25px;
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+        .toggle-link span {
+            color: var(--accent-color);
+            font-weight: 700;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .toggle-link span:hover { color: #e62e5c; text-decoration: underline; }
+
+        /* Error Message */
+        #auth-error {
+            color: #ff453a;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 15px;
+            min-height: 20px;
+        }
+
+        /* Hide Register Form by default */
+        #register-section { display: none; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="brand"><span>M</span>EXPLICIT</div>
+    </nav>
+
+    <div class="auth-wrapper">
+        <div class="glass-card fade-in-up">
+            
+            <div id="login-section">
+                <h2 class="auth-title">Welcome Back</h2>
+                <p class="auth-subtitle">Log in to access your vocal workspace.</p>
+                
+                <form id="loginForm">
+                    <div class="input-group">
+                        <label for="login-username">Username</label>
+                        <input type="text" id="login-username" required placeholder="Enter your username">
+                    </div>
+                    <div class="input-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required placeholder="Enter your password">
+                    </div>
+                    <button type="submit" class="submit-btn" id="loginBtn">Log In</button>
+                </form>
+                
+                <div class="toggle-link">
+                    Don't have an account? <span onclick="toggleAuth('register')">Sign up</span>
+                </div>
+            </div>
+
+            <div id="register-section">
+                <h2 class="auth-title">Create Account</h2>
+                <p class="auth-subtitle">Join the audio validation platform.</p>
+                
+                <form id="registerForm">
+                    <div class="input-group">
+                        <label for="reg-username">Choose a Username</label>
+                        <input type="text" id="reg-username" required placeholder="Create a username">
+                    </div>
+                    <div class="input-group">
+                        <label for="reg-password">Create Password</label>
+                        <input type="password" id="reg-password" required placeholder="Create a strong password">
+                    </div>
+                    <button type="submit" class="submit-btn" id="regBtn">Sign Up</button>
+                </form>
+                
+                <div class="toggle-link">
+                    Already have an account? <span onclick="toggleAuth('login')">Log in</span>
+                </div>
+            </div>
+
+            <div id="auth-error"></div>
+
+        </div>
+    </div>
+
+    <script>
+        // Smooth toggle between Login and Register views
+        function toggleAuth(type) {
+            const loginSec = document.getElementById('login-section');
+            const regSec = document.getElementById('register-section');
+            const errorDiv = document.getElementById('auth-error');
+            
+            errorDiv.innerText = ''; // Clear errors on toggle
+
+            if (type === 'register') {
+                loginSec.style.display = 'none';
+                regSec.style.display = 'block';
+            } else {
+                regSec.style.display = 'none';
+                loginSec.style.display = 'block';
+            }
+        }
+
+        // Shared function to handle the API calls to FastAPI
+        async function handleAuth(event, endpoint, userField, passField, btnId) {
+            event.preventDefault();
+            
+            const username = document.getElementById(userField).value;
+            const password = document.getElementById(passField).value;
+            const errorDiv = document.getElementById('auth-error');
+            const btn = document.getElementById(btnId);
+            const originalText = btn.innerText;
+
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+            errorDiv.innerText = '';
+
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('password', password);
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success') {
+                    // Store user info in localStorage for the main app
+                    localStorage.setItem('user_id', data.user_id);
+                    localStorage.setItem('username', data.username);
+                    // Redirect to the main app
+                    window.location.href = '/';
+                } else {
+                    errorDiv.innerText = data.detail || data.message || "Authentication failed.";
+                }
+            } catch (error) {
+                errorDiv.innerText = "Connection error. Is the server running?";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', (e) => handleAuth(e, '/login', 'login-username', 'login-password', 'loginBtn'));
+        document.getElementById('registerForm').addEventListener('submit', (e) => handleAuth(e, '/register', 'reg-username', 'reg-password', 'regBtn'));
+        
+        // Auto-switch to register if coming from a sign-up link
+        if (localStorage.getItem('auth_mode') === 'register') {
+            toggleAuth('register');
+            localStorage.removeItem('auth_mode');
+        }
+    </script>
+</body>
+</html>

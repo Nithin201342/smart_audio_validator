@@ -1,0 +1,26 @@
+# ==========================================
+# AI Smart Audio Validator - .gitignore
+# ==========================================
+
+# 1. Python & Environment
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# 2. Database (Crucial for Security!)
+*.db
+*.sqlite3
+validator.db
+
+# 3. Application Specific (Temporary Files)
+temp_uploads/
+*.wav
+!auido_samples/*.wav 
+
+# 4. OS & Editor Settings
+.DS_Store
+.vscode/
+.idea/
