@@ -62,23 +62,28 @@ def analyze_audio(original_path, user_path):
         secs = int(trouble_time_sec % 60)
         trouble_spot_formatted = f"{mins:02d}:{secs:02d}"
 
-        # MODULE E: GRADING
-        # Wrap the math in float() to prevent FastAPI JSON serialization errors
-        pitch_score = float((D_pitch[-1, -1] / len(wp_pitch)) * 100)
-        rhythm_score = float((D_rhythm[-1, -1] / len(wp_rhythm)) * 100)
+        # ==========================================
+        # MODULE E: GRADING (Inverted for Accuracy)
+        # ==========================================
+        # 1. Calculate the raw error
+        pitch_error = float((D_pitch[-1, -1] / len(wp_pitch)) * 100)
+        rhythm_error = float((D_rhythm[-1, -1] / len(wp_rhythm)) * 100)
         
-        overall_score = round((pitch_score + rhythm_score) / 2, 2)
-        pitch_score = round(pitch_score, 2)
-        rhythm_score = round(rhythm_score, 2)
+        # 2. Subtract from 100 to get Accuracy (0 to 100, higher is better)
+        # Using max(0, ...) ensures the score never drops below 0 if they do terribly
+        pitch_score = float(max(0, 100 - pitch_error))
+        rhythm_score = float(max(0, 100 - rhythm_error))
+        overall_score = float(round((pitch_score + rhythm_score) / 2, 2))
 
-        if pitch_score < 15: pitch_tips = "Excellent pitch! You hit the notes perfectly."
-        elif pitch_score < 30: pitch_tips = "Good pitch. A few wavering notes, but solid overall."
-        elif pitch_score < 50: pitch_tips = "Average pitch. You are drifting off-key. Focus on breath support."
+        # 3. Updated Grading Logic (Higher = Better)
+        if pitch_score >= 85: pitch_tips = "Excellent pitch! You hit the notes perfectly."
+        elif pitch_score >= 70: pitch_tips = "Good pitch. A few wavering notes, but solid overall."
+        elif pitch_score >= 50: pitch_tips = "Average pitch. You are drifting off-key. Focus on breath support."
         else: pitch_tips = "Poor pitch. You are singing flat/sharp. Try practicing scales."
 
-        if rhythm_score < 15: rhythm_tips = "Perfect timing! You are locked into the groove."
-        elif rhythm_score < 30: rhythm_tips = "Good rhythm, but you rushed a few transitions."
-        elif rhythm_score < 50: rhythm_tips = "Average timing. You are dragging behind the beat."
+        if rhythm_score >= 85: rhythm_tips = "Perfect timing! You are locked into the groove."
+        elif rhythm_score >= 70: rhythm_tips = "Good rhythm, but you rushed a few transitions."
+        elif rhythm_score >= 50: rhythm_tips = "Average timing. You are dragging behind the beat."
         else: rhythm_tips = "Poor timing. You are out of sync with the track."
 
         return {
@@ -88,8 +93,8 @@ def analyze_audio(original_path, user_path):
             "rhythm_feedback": rhythm_tips,
             "pacing_diff": pacing_diff,
             "energy_diff": energy_diff,
-            "trouble_time_sec": trouble_time_sec,          # NEW: Raw seconds for the audio player
-            "trouble_spot_formatted": trouble_spot_formatted # NEW: Formatted string for text
+            "trouble_time_sec": trouble_time_sec,
+            "trouble_spot_formatted": trouble_spot_formatted
         }
 
     except Exception as e:

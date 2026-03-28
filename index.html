@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Smart Audio Validator</title>
     <script src="https://unpkg.com/wavesurfer.js@7"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.dots.min.js"></script>
     <style>
         /* Apple System Font Stack & iOS Light Theme */
         :root {
@@ -18,7 +20,8 @@
         }
 
         body {
-            margin: 0; padding: 0;
+            margin: 0;
+            padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -28,125 +31,416 @@
 
         /* Animations */
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(40px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
-        .fade-in-up { animation: fadeInUp 1s ease-out forwards; }
+
+        .fade-in-up {
+            animation: fadeInUp 1s ease-out forwards;
+        }
 
         /* Navbar */
         nav {
-            position: fixed; top: 0; width: 100%; display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 50px; box-sizing: border-box; background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 1000;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 50px;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 1000;
             border-bottom: 1px solid var(--glass-border);
         }
-        .brand { font-size: 24px; font-weight: 800; letter-spacing: 1px; color: var(--text-color); display: flex; align-items: center; gap: 5px; }
-        .brand span { color: var(--accent-color); font-size: 28px; }
-        .nav-links { display: flex; align-items: center; }
-        .nav-links a { color: #666; text-decoration: none; margin: 0 15px; font-size: 15px; font-weight: 600; transition: color 0.3s; }
-        .nav-links a:hover { color: var(--text-color); }
+
+        .brand {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .brand span {
+            color: var(--accent-color);
+            font-size: 28px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #666;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 15px;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-color);
+        }
+
         .btn-join {
-            background: var(--accent-color); color: white !important; padding: 10px 24px;
-            border-radius: 20px; font-weight: 600; margin-left: 20px !important;
+            background: var(--accent-color);
+            color: white !important;
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-left: 20px !important;
             box-shadow: 0 4px 15px rgba(255, 51, 102, 0.3);
         }
 
         /* Hero Section */
         .hero {
-            min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: radial-gradient(circle at 50% -20%, #ffe0e8 0%, var(--bg-color) 60%);
-            text-align: center; padding-top: 80px;
+            position: relative; /* Required for Vanta.js to anchor the canvas */
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+            text-align: center; 
+            padding-top: 80px; 
+            overflow: hidden; /* Prevents the canvas from creating weird scrollbars */
         }
-        .hero p.tagline { color: var(--accent-color); letter-spacing: 3px; font-size: 14px; font-weight: 700; text-transform: uppercase; margin-bottom: 15px; animation: fadeIn 1.5s ease-out forwards; }
-        h1.hero-title { font-size: 72px; line-height: 1.1; margin: 0 0 30px; font-weight: 800; letter-spacing: -2px; color: var(--text-color); }
+        
+        /* Forces all content inside the hero (text, cards) to sit ABOVE the animation */
+        .hero > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero p.tagline {
+            color: var(--accent-color);
+            letter-spacing: 3px;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            animation: fadeIn 1.5s ease-out forwards;
+        }
+
+        h1.hero-title {
+            font-size: 72px;
+            line-height: 1.1;
+            margin: 0 0 30px;
+            font-weight: 800;
+            letter-spacing: -2px;
+            color: var(--text-color);
+        }
 
         /* Cards */
-        .cards-container { display: flex; gap: 25px; max-width: 1000px; margin: 0 auto; flex-wrap: wrap; justify-content: center; padding: 0 20px; }
-        .glass-card { background: #ffffff; border: 1px solid var(--glass-border); padding: 35px; border-radius: 24px; flex: 1; min-width: 250px; box-shadow: 0 15px 35px var(--shadow-color); transition: transform 0.3s, box-shadow 0.3s; }
-        .glass-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12); }
-        .card-title { font-size: 15px; font-weight: 600; color: #888; margin-bottom: 10px; }
-        .card-value { font-size: 36px; font-weight: 800; color: var(--text-color); }
+        .cards-container {
+            display: flex;
+            gap: 25px;
+            max-width: 1000px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 0 20px;
+        }
+
+        .glass-card {
+            background: #ffffff;
+            border: 1px solid var(--glass-border);
+            padding: 35px;
+            border-radius: 24px;
+            flex: 1;
+            min-width: 250px;
+            box-shadow: 0 15px 35px var(--shadow-color);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .card-value {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--text-color);
+        }
 
         /* About Section */
-        .about-section { padding: 100px 20px; text-align: center; max-width: 800px; margin: 0 auto; }
-        .about-section h2 { font-size: 40px; font-weight: 800; margin-bottom: 20px; letter-spacing: -1px; }
-        .about-section p { color: #666; line-height: 1.7; font-size: 18px; }
+        .about-section {
+            padding: 100px 20px;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .about-section h2 {
+            font-size: 40px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+
+        .about-section p {
+            color: #666;
+            line-height: 1.7;
+            font-size: 18px;
+        }
 
         /* Workspace & Grid layout */
-        .workspace { padding: 50px 20px 100px; display: flex; justify-content: center; }
-        .workspace-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; max-width: 1200px; margin: 0 auto; width: 100%; align-items: stretch; }
-        @media (max-width: 800px) { .workspace-grid { grid-template-columns: 1fr; } }
-        .form-card, .result-card { max-width: none; width: auto; display: flex; flex-direction: column; justify-content: center; }
+        .workspace {
+            padding: 50px 20px 100px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            align-items: stretch;
+        }
+
+        @media (max-width: 800px) {
+            .workspace-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-card,
+        .result-card {
+            max-width: none;
+            width: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
 
         /* Form styling */
-        .upload-group { margin-bottom: 25px; text-align: left; }
-        label { font-weight: 600; font-size: 14px; color: #555; display: block; margin-bottom: 10px; }
-        input[type="file"] { width: 100%; padding: 12px; background: #f9f9f9; border: 2px dashed #ddd; border-radius: 12px; outline: none; color: #333; box-sizing: border-box; transition: 0.3s; }
-        input[type="file"]::file-selector-button { background: #fff; border: 1px solid #ddd; color: #111; font-weight: 600; padding: 8px 16px; border-radius: 8px; margin-right: 15px; cursor: pointer; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); transition: 0.3s; }
-        input[type="file"]::file-selector-button:hover { background: #f0f0f0; }
-        input[type="file"]:hover { border-color: var(--accent-color); background: #fffcfd; }
+        .upload-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
 
-        button.submit-btn { width: 100%; padding: 18px; background: var(--accent-color); color: white; border: none; border-radius: 30px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; box-shadow: 0 8px 20px rgba(255, 51, 102, 0.3); }
-        button.submit-btn:hover { background: #e62e5c; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(255, 51, 102, 0.4); }
-        button.submit-btn:disabled { background: #e0e0e0; color: #999; box-shadow: none; cursor: not-allowed; transform: none; }
-        .loading { text-align: center; display: none; margin-top: 20px; color: var(--accent-color); font-weight: 700; }
+        label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #555;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            background: #f9f9f9;
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            outline: none;
+            color: #333;
+            box-sizing: border-box;
+            transition: 0.3s;
+        }
+
+        input[type="file"]::file-selector-button {
+            background: #fff;
+            border: 1px solid #ddd;
+            color: #111;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            margin-right: 15px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            transition: 0.3s;
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            background: #f0f0f0;
+        }
+
+        input[type="file"]:hover {
+            border-color: var(--accent-color);
+            background: #fffcfd;
+        }
+
+        button.submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 8px 20px rgba(255, 51, 102, 0.3);
+        }
+
+        button.submit-btn:hover {
+            background: #e62e5c;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 51, 102, 0.4);
+        }
+
+        button.submit-btn:disabled {
+            background: #e0e0e0;
+            color: #999;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            display: none;
+            margin-top: 20px;
+            color: var(--accent-color);
+            font-weight: 700;
+        }
 
         /* Results & Badges */
-        .empty-state { text-align: center; color: #999; }
-        .grade-badge { display: inline-block; padding: 8px 20px; border-radius: 30px; font-weight: 800; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
-        .badge-Excellent { background: #e8f5e9; color: #2e7d32; }
-        .badge-Good { background: #e3f2fd; color: #1565c0; }
-        .badge-Average { background: #fff8e1; color: #f57f17; }
-        .badge-Poor { background: #ffebee; color: #c62828; }
-        .tips-box { background: #f9f9f9; padding: 20px; border-radius: 12px; border-left: 4px solid var(--accent-color); color: #444; line-height: 1.6; font-size: 16px; }
+        .empty-state {
+            text-align: center;
+            color: #999;
+        }
+
+        .grade-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .badge-Excellent {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge-Good {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .badge-Average {
+            background: #fff8e1;
+            color: #f57f17;
+        }
+
+        .badge-Poor {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .tips-box {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-color);
+            color: #444;
+            line-height: 1.6;
+            font-size: 16px;
+        }
 
         /* Waveform Containers */
-        .waveform-container { background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; overflow: hidden; margin-bottom: 15px; }
-        .wave-label { font-size: 12px; color: #888; margin-bottom: 5px; font-weight: 600; text-transform: uppercase; }
+        .waveform-container {
+            background: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .wave-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 
 <body>
-
     <nav>
-        <div class="brand"><span>M</span>EXPLICIT</div>
+        <div class="brand"><a href="/" class="brand">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" x2="12" y1="19" y2="22"></line>
+            </svg>
+        </a>SingSmart</div>
         <div class="nav-links" id="guest-nav">
             <a href="/auth" style="margin-left: 20px;">Log In</a>
             <a href="/auth" class="btn-join" onclick="localStorage.setItem('auth_mode', 'register')">Sign Up</a>
         </div>
         <div class="nav-links" id="user-nav" style="display: none;">
             <span id="welcome-msg" style="margin-left: 20px; font-weight: 700; color: #111;"></span>
-            <a href="#" onclick="logout()" style="color: var(--accent-color); margin-left:15px; font-weight: 700;">Logout</a>
+            <a href="/dashboard" style="margin-left:15px; font-weight: 600;">Dashboard</a>
+            <a href="#" onclick="logout()"
+                style="color: var(--accent-color); margin-left:15px; font-weight: 700;">Logout</a>
         </div>
     </nav>
 
     <div class="hero">
         <p class="tagline fade-in-up" style="animation-delay: 0.1s;">● AUDIO VALIDATION PLATFORM ●</p>
-        <h1 class="hero-title fade-in-up" style="animation-delay: 0.3s;">Music App<br>UI Kit</h1>
+        <h1 class="hero-title fade-in-up" style="animation-delay: 0.3s;">Elevate your<br>Vocal Performance</h1>
 
         <div class="cards-container fade-in-up" style="animation-delay: 0.5s; margin-top: 40px;">
             <div class="glass-card">
-                <div class="card-title">Accuracy Rate</div>
-                <div class="card-value">99.8%</div>
-            </div>
-            <div class="glass-card">
                 <div class="card-title">Processing Time</div>
-                <div class="card-value">&lt; 3s</div>
+                <div class="card-value">&lt; 10s</div>
             </div>
             <div class="glass-card">
                 <div class="card-title">Supported Formats</div>
                 <div class="card-value">WAV</div>
             </div>
+            <!-- <div class="glass-card">
+                <div class="card-title">Supported Formats</div>
+                <div class="card-value">WAV</div>
+            </div> -->
         </div>
     </div>
 
     <div id="about" class="about-section fade-in-up" style="animation-delay: 0.2s;">
-        <h2>About the Validator</h2>
-        <p>Our AI-powered engine analyzes your vocal performance against original tracks. We provide instant feedback, scoring on pitch, timing, and tonal accuracy, helping you perfect your craft with professional-grade insights.</p>
+        <h2>About</h2>
+        <p>At SingSmart, we empower singers to reach their full potential through precise audio analysis and personalized feedback, transforming their vocal journeys into masterpieces of musical excellence.</p>
     </div>
 
     <div id="workspace" class="workspace fade-in-up" style="animation-delay: 0.4s;">
@@ -157,6 +451,15 @@
                 <p style="margin-bottom: 30px; color: #888;">Upload your tracks below to get started.</p>
 
                 <form id="uploadForm">
+                    <div class="upload-group">
+                        <label for="songName">Track Name (Select existing or type a new one)</label>
+                        <input type="text" id="songName" list="existing-songs" placeholder="e.g., Tum Hi Ho" required
+                            style="width: 100%; padding: 12px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 12px; outline: none; font-family: inherit;">
+
+                        <datalist id="existing-songs">
+                        </datalist>
+                    </div>
+
                     <div class="upload-group">
                         <label for="originalFile">1. Original Song Reference (.wav)</label>
                         <input type="file" id="originalFile" accept=".wav" required>
@@ -175,11 +478,13 @@
                 <div id="visualizer-section" style="display: none; margin-top: 30px;">
                     <div class="wave-label">Original Ground Truth</div>
                     <div id="waveform-orig" class="waveform-container"></div>
-                    
+
                     <div class="wave-label">Your Performance</div>
                     <div id="waveform-user" class="waveform-container"></div>
-                    
-                    <button type="button" onclick="playBoth()" style="width: 100%; padding: 12px; background: #111; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s;">▶ Sync & Play Both Audio Tracks</button>
+
+                    <button type="button" onclick="playBoth()"
+                        style="width: 100%; padding: 12px; background: #111; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s;">▶
+                        Sync & Play Both Audio Tracks</button>
                 </div>
             </div>
 
@@ -190,19 +495,22 @@
                 </div>
 
                 <div id="result-content" style="display: none;">
-                    <h3 style="margin-top:0; color:#888; font-size:14px; text-transform:uppercase; letter-spacing:1px;">Analysis Report</h3>
+                    <h3 style="margin-top:0; color:#888; font-size:14px; text-transform:uppercase; letter-spacing:1px;">
+                        Analysis Report</h3>
 
                     <div id="res-badge" class="grade-badge"></div>
 
-                    <div style="font-size: 56px; font-weight: 800; color: var(--text-color); margin-bottom: 5px;" id="res-score"></div>
-                    <p style="color: #666; font-size: 14px; margin-top: 0; margin-bottom: 30px;">Overall Error Score (Lower is better)</p>
-
+                    <div style="font-size: 56px; font-weight: 800; color: var(--text-color); margin-bottom: 5px;"
+                        id="res-score"></div>
+                    <p style="color: #666; font-size: 14px; margin-top: 0; margin-bottom: 30px;">Overall Accuracy Score
+                        (Higher is better)</p>
                     <h4 style="margin-bottom: 15px; font-size: 18px; font-weight: 700;">💡 Tips for Improvement</h4>
                     <div class="tips-box" id="res-tips"></div>
 
-                    <h4 style="margin-top: 25px; margin-bottom: 15px; font-size: 18px; font-weight: 700;">🔍 Major Differences</h4>
+                    <h4 style="margin-top: 25px; margin-bottom: 15px; font-size: 18px; font-weight: 700;">🔍 Major
+                        Differences</h4>
                     <div class="tips-box" id="res-differences" style="background: #fdf5ff; border-left-color: #d946ef;">
-                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -210,7 +518,7 @@
     </div>
 
     <script>
-        // 1. Auth State Check
+        // 1. Auth State Check & Load Data
         const userId = localStorage.getItem('user_id');
         const username = localStorage.getItem('username');
 
@@ -218,6 +526,30 @@
             document.getElementById('guest-nav').style.display = 'none';
             document.getElementById('user-nav').style.display = 'flex';
             document.getElementById('welcome-msg').innerText = `Hi, ${username}!`;
+
+            // Fetch their existing songs to populate the dropdown
+            loadUserSongs();
+        }
+
+        async function loadUserSongs() {
+            try {
+                const response = await fetch(`/api/user-songs/${userId}`);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    const datalist = document.getElementById('existing-songs');
+                    datalist.innerHTML = ''; // Clear out any old options
+
+                    // Add an option for every unique song they've analyzed
+                    result.data.forEach(song => {
+                        let option = document.createElement('option');
+                        option.value = song;
+                        datalist.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error("Could not load song history for autocomplete.");
+            }
         }
 
         function logout() {
@@ -233,7 +565,7 @@
             height: 60,
             normalize: true
         });
-        
+
         const waveUser = WaveSurfer.create({
             container: '#waveform-user',
             waveColor: '#8b5cf6',
@@ -257,6 +589,24 @@
             }
         }
 
+        // Initialize Vanta.js Background
+        VANTA.DOTS({
+            el: ".hero",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0xff3366,       /* Swapped to your --accent-color to match the branding */
+            color2: 0xb61f49,
+            backgroundColor: 0xf7f7f9, /* Matches your --bg-color */
+            size: 3.10,
+            spacing: 27.00,
+            showLines: false
+        });
+
         // 3. Scroll Animations
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -273,11 +623,29 @@
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            const songNameValue = document.getElementById('songName').value.trim();
+            if (!songNameValue) {
+                alert("⚠️ Please select an existing Track Name or type a new one to organize your dashboard.");
+                document.getElementById('songName').focus();
+                return; 
+            }
+
             const origFile = document.getElementById('originalFile').files[0];
             const userFile = document.getElementById('userFile').files[0];
+
+            // ==========================================
+            // NEW: The "Same File" Validation Check
+            // ==========================================
+            if (origFile.name === userFile.name && origFile.size === userFile.size) {
+                alert("🛑 Wait! You selected the exact same file for both the Original and your Recording. Please select your actual vocal track for the second file.");
+                return; // Stop the process instantly!
+            }
+
             const btn = document.getElementById('validateBtn');
             const loading = document.getElementById('loading');
             
+            // ... (the rest of the code remains the same)
+
             const emptyState = document.getElementById('empty-state');
             const resultContent = document.getElementById('result-content');
             const resBadge = document.getElementById('res-badge');
@@ -293,7 +661,7 @@
             loading.style.display = 'block';
             emptyState.style.display = 'none';
             resultContent.style.display = 'none';
-            resBadge.className = 'grade-badge'; 
+            resBadge.className = 'grade-badge';
 
             // Load the audio files into the visualizers visually
             waveOrig.load(URL.createObjectURL(origFile));
@@ -302,7 +670,10 @@
 
             const formData = new FormData();
             formData.append('user_id', userId);
-            formData.append('song_name', origFile.name);
+
+            // Send the perfectly cleaned and validated song name to the database!
+            formData.append('song_name', songNameValue);
+
             formData.append('original_file', origFile);
             formData.append('user_file', userFile);
 
@@ -315,11 +686,11 @@
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    // Calculate Grade
+                    // Calculate Grade (Higher is Better now!)
                     let calculatedGrade = "Poor";
-                    if (data.overall_score < 15) calculatedGrade = "Excellent";
-                    else if (data.overall_score < 30) calculatedGrade = "Good";
-                    else if (data.overall_score < 50) calculatedGrade = "Average";
+                    if (data.overall_score >= 85) calculatedGrade = "Excellent";
+                    else if (data.overall_score >= 70) calculatedGrade = "Good";
+                    else if (data.overall_score >= 50) calculatedGrade = "Average";
 
                     // Update Grade UI
                     resBadge.innerText = `Performance: ${calculatedGrade}`;
